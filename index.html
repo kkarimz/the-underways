@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#131516">
+  <title>The Underways</title>
+  <link rel="stylesheet" href="screen.css">
+  <script defer src="game.js"></script>
+  <script defer src="profile.js"></script>
+  <script defer src="view.js"></script>
+</head>
+<body>
+  <main class="shell" id="game-screen">
+    <div class="layout">
+      <section class="panel expedition" aria-label="Dungeon">
+        <header class="panel-head">
+          <div class="location"><span class="sigil" aria-hidden="true">✥</span><span id="biome-name">Stone Keep</span><span class="location-split" aria-hidden="true">/</span><span id="zone"><i></i><span>The Threshold</span></span></div>
+          <span class="turn-counter"><span id="depth-label" hidden></span> Turn <strong id="turn">000</strong></span>
+        </header>
+        <div class="stage">
+          <canvas id="world" width="272" height="208" tabindex="-1" aria-label="Dungeon view. Use WASD or arrow keys to move and bump into enemies to attack."></canvas>
+          <div class="vignette" aria-hidden="true"></div>
+          <div class="floating-text" id="floating-text" aria-hidden="true"></div>
+          <div class="combat-beat" id="combat-beat" hidden>Enemy turn</div>
+          <div class="clock" id="clock" hidden>
+            <span>Time left</span>
+            <strong id="timer" role="timer" aria-label="Time remaining">01:00</strong>
+            <div class="clock-track" aria-hidden="true"><div id="clock-fill"></div></div>
+          </div>
+          <div class="practice-badge" id="practice-badge" hidden>Practice · Untimed</div>
+          <div class="gate-guide" id="gate-guide" role="img" aria-label="Gate direction" hidden>
+            <svg id="gate-guide-arrow" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 1 23 12H16V22H8V12H1Z" />
+            </svg>
+          </div>
+          <div class="briefing" id="briefing">
+            <div class="briefing-card">
+              <div class="eyebrow">Many ways down. One way out.</div>
+              <h1>The Underways</h1>
+              <p id="mode-note">Find the hidden gate in <strong>60 seconds</strong>.</p>
+              <div id="choose-explorer">
+                <div class="mode-picker" role="group" aria-label="Expedition mode">
+                  <button type="button" data-mode="timed" aria-pressed="true">Timed · 60s</button>
+                  <button type="button" data-mode="practice" aria-pressed="false">Practice · Untimed</button>
+                  <button type="button" data-mode="debug" aria-pressed="false">Debug</button>
+                </div>
+                <div id="debug-start" class="debug-tools" hidden>
+                  <label for="debug-biome">Level theme</label>
+                  <select id="debug-biome"></select>
+                </div>
+                <h2 class="step-heading" id="avatar-heading">Choose your explorer</h2>
+                <div id="avatar-picker" class="avatar-picker" role="group" aria-labelledby="avatar-heading"></div>
+                <div class="title-actions"><button type="button" id="confirm-avatar" class="primary">Continue as Knight</button></div>
+              </div>
+              <div id="roll-step" hidden>
+                <h2 class="step-heading">Roll your starting stats</h2>
+                <div class="dice-grid" id="dice-grid" aria-live="polite" aria-atomic="true">
+                  <div><span>Health</span><strong>—</strong><small>10 + d6</small></div>
+                  <div><span>Power</span><strong>—</strong><small>d6</small></div>
+                  <div><span>Gold</span><strong>—</strong><small>2d6</small></div>
+                </div>
+                <div class="title-actions">
+                  <button type="button" id="roll" class="primary">Roll dice</button>
+                  <button type="button" id="reroll" hidden>Reroll stats</button>
+                  <button type="button" id="descend" class="primary" hidden>Descend <span aria-hidden="true">↓</span></button>
+                </div>
+                <button type="button" id="change-avatar" class="change-explorer">Change explorer</button>
+              </div>
+              <div class="title-controls"><kbd class="key-group" aria-label="WASD"><i class="keycap key-w"></i><i class="keycap key-a"></i><i class="keycap key-s"></i><i class="keycap key-d"></i></kbd> Move <span>·</span> Bump to attack</div>
+              <div class="title-best" id="title-best" hidden></div>
+            </div>
+          </div>
+          <div class="drop-roll" id="drop-roll" hidden aria-live="polite"></div>
+          <div class="result" id="floor-clear" hidden>
+            <div class="result-card">
+              <div class="eyebrow" id="floor-clear-kicker"></div>
+              <img class="stairs-emblem" src="assets/stairs-down.svg" alt="" width="48" height="48">
+              <h2>Stairs found.</h2>
+              <p id="floor-clear-next"></p>
+              <p id="floor-clear-stats"></p>
+              <button type="button" id="next-floor" class="primary">Descend ↓</button>
+            </div>
+          </div>
+          <div class="relic-toast" id="relic-toast" role="status" hidden>
+            <strong>Both relics found!</strong>
+            <span id="relic-toast-points"></span>
+          </div>
+          <div class="result" id="result" hidden>
+            <div class="result-card">
+              <div class="eyebrow" id="result-kicker"></div>
+              <h2 id="result-title"></h2>
+              <p id="result-flavor" hidden>The maze keeps you.</p>
+              <div class="result-score" id="result-score"></div>
+              <p id="relic-bonus" class="relic-bonus" hidden></p>
+              <p id="result-copy"></p>
+              <p id="bank-reward" class="bank-reward" hidden></p>
+              <figure class="debrief" id="debrief" hidden>
+                <figcaption id="gate-location"></figcaption>
+                <canvas id="debrief-map" width="222" height="174" role="img" aria-label="Full dungeon map"></canvas>
+                <div class="legend">
+                  <span><i class="gate"></i> <span id="debrief-goal">Exit</span></span><span><i class="here"></i> Run ended</span>
+                  <span><i class="start"></i> Start</span><span><i class="known"></i> Explored</span>
+                </div>
+              </figure>
+              <div class="title-actions result-actions">
+                <button id="replay" type="button">New expedition <span aria-hidden="true">↗</span></button>
+                <button id="shop-open" type="button" hidden>Shop</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <aside class="sidebar" id="hud" aria-label="Expedition status" hidden>
+        <section class="panel chart">
+          <header class="panel-head"><span>Survey map</span><span class="dim" id="survey">0%</span></header>
+          <div class="map-frame"><canvas id="map" width="148" height="116" aria-label="Minimap of explored corridors"></canvas></div>
+          <div class="legend"><span><i class="here"></i> You</span><span><i class="known"></i> Surveyed</span><span><i class="gate"></i> <span id="map-goal">Stairs</span></span><span><i class="rune"></i> Rune</span><span title="A live spike plate costs 2 HP"><i class="spike"></i> Spikes</span></div>
+          <div id="debug-map-legend" class="legend" hidden><span><i class="debug-enemy"></i> Enemies</span><span><i class="debug-loot"></i> Loot</span></div>
+        </section>
+        <section class="panel kit">
+          <div class="kit-body">
+            <div class="vitals"><span>Health</span><strong id="hp">—</strong></div>
+            <div id="health" class="health" aria-hidden="true"></div>
+            <div class="stats">
+              <div title="Power"><i class="icon blade" aria-hidden="true"></i><span>Power</span><strong id="attack">—</strong></div>
+              <div title="Coins"><i class="icon coin" aria-hidden="true"></i><span>Coins</span><strong id="gold">—</strong></div>
+              <div title="Relics on this floor"><i class="icon relic" aria-hidden="true"></i><span>Relics on this floor</span><strong id="relics">0 / 2</strong></div>
+            </div>
+            <div class="relic-goal" id="relic-goal">
+              <span>Relic bonus</span>
+              <strong id="relic-goal-points"></strong>
+              <small id="relic-goal-status"></small>
+            </div>
+            <details class="dice">
+              <summary>Starting dice</summary>
+              <dl id="rolls"></dl>
+            </details>
+          </div>
+        </section>
+        <section class="panel log-panel">
+          <header class="panel-head"><span>Field log</span></header>
+          <div class="log" id="log" aria-live="polite"></div>
+        </section>
+      </aside>
+    </div>
+    <footer class="controls">
+      <div class="key-hints">WASD or arrows to move <span aria-hidden="true">·</span> Move into enemies to attack</div>
+      <div class="control-actions">
+        <button type="button" id="pause-open" aria-keyshortcuts="Escape" hidden>Pause</button>
+        <button type="button" id="history-open">Run history</button>
+        <button type="button" id="help-open">Field guide</button>
+        <button type="button" id="options-open">Options</button>
+        <button type="button" id="restart">New run</button>
+      </div>
+    </footer>
+    <div class="touch" aria-label="Movement controls">
+      <button type="button" data-action="3" aria-label="Move left">←</button>
+      <button type="button" data-action="0" aria-label="Move up">↑</button>
+      <button type="button" data-action="2" aria-label="Move down">↓</button>
+      <button type="button" data-action="1" aria-label="Move right">→</button>
+    </div>
+    <dialog id="pause-menu" class="game-menu" aria-labelledby="pause-heading">
+      <header class="menu-head"><h2 id="pause-heading">Paused</h2></header>
+      <section class="menu-section">
+        <p>The clock and enemies are frozen. Press Esc or Resume to continue.</p>
+        <div class="menu-actions pause-actions">
+          <button type="button" id="pause-resume" class="primary" autofocus>Resume</button>
+          <button type="button" id="pause-help">Field Guide</button>
+          <button type="button" id="pause-options">Options</button>
+          <button type="button" id="debug-enable">Enable Debug · Unranked</button>
+        </div>
+        <div id="debug-pause" class="debug-tools" hidden>
+          <label for="debug-live-biome">Level theme</label><select id="debug-live-biome"></select>
+          <button type="button" id="debug-fog" aria-pressed="true">Full map: on</button>
+        </div>
+      </section>
+    </dialog>
+    <dialog id="options-menu" class="game-menu" aria-labelledby="options-heading">
+      <header class="menu-head">
+        <h2 id="options-heading">Options</h2>
+        <form method="dialog"><button type="submit">Close</button></form>
+      </header>
+      <section class="menu-section" aria-labelledby="settings-heading">
+        <h3 id="settings-heading">Game settings</h3>
+        <div class="menu-actions">
+          <button type="button" id="sound" aria-pressed="true">Sound: on</button>
+          <button type="button" id="motion" aria-pressed="false">Reduced motion: off</button>
+          <button type="button" id="fullscreen" aria-pressed="false" title="Toggle fullscreen (F)">Fullscreen</button>
+        </div>
+        <p>Settings are saved on this device. Use the pause menu to change them without losing time.</p>
+      </section>
+    </dialog>
+    <dialog id="shop-menu" class="game-menu" aria-labelledby="shop-heading">
+      <header class="menu-head">
+        <div><div class="eyebrow">Between expeditions</div><h2 id="shop-heading">Outfitter</h2></div>
+        <form method="dialog"><button type="submit">Close</button></form>
+      </header>
+      <section class="menu-section shop-summary">
+        <div><span>Banked gold</span><strong id="shop-balance">0g</strong></div>
+        <p>Gold you carry out of the maze buys cosmetics here. Starting gold doesn’t count.</p>
+        <p id="shop-notice" class="shop-notice" aria-live="polite"></p>
+      </section>
+      <div class="menu-switch" role="group" aria-label="Outfitter categories">
+        <button type="button" data-shop-tab="avatars" aria-controls="shop-avatar-section" aria-pressed="true">Explorers</button>
+        <button type="button" data-shop-tab="dice" aria-controls="shop-dice-section" aria-pressed="false">Dice styles</button>
+      </div>
+      <section class="menu-section" id="shop-avatar-section" aria-labelledby="shop-avatars-heading">
+        <h3 id="shop-avatars-heading">Explorers</h3>
+        <div id="shop-avatars" class="shop-items"></div>
+      </section>
+      <section class="menu-section" id="shop-dice-section" aria-labelledby="shop-dice-heading" hidden>
+        <h3 id="shop-dice-heading">Dice styles</h3>
+        <div id="shop-dice" class="shop-items"></div>
+      </section>
+    </dialog>
+    <dialog id="help-menu" class="game-menu" aria-labelledby="help-heading">
+      <header class="menu-head">
+        <h2 id="help-heading">Field guide</h2>
+        <form method="dialog"><button type="submit">Close</button></form>
+      </header>
+      <div class="menu-switch" role="group" aria-label="Guide sections">
+        <button type="button" data-help-tab="basics" aria-controls="help-basics" aria-pressed="true">How to play</button>
+        <button type="button" data-help-tab="enemies" aria-controls="help-enemies" aria-pressed="false">Bestiary</button>
+      </div>
+      <section id="help-basics" class="menu-section">
+        <h3>Survive the Underways</h3>
+        <dl class="guide-rules">
+          <div><dt>Move &amp; fight</dt><dd>Use WASD or the arrow keys to move. Holding a direction stops at an enemy. Press again to attack, then watch for the enemy's reply.</dd></div>
+          <div><dt>Healing</dt><dd>Tonics found in the maze are consumed on pickup, restoring up to 2 HP. A red bar appears above your explorer at 30% health or less.</dd></div>
+          <div><dt>Descend &amp; escape</dt><dd>Find stairs down on floors 1–3 and the escape gate on floor 4. Each timed floor starts at 60 seconds. An hourglass adds 10 seconds. Blue runes point toward the stairs or gate.</dd></div>
+          <div><dt>Bring back loot</dt><dd>Escape with both relics for a score bonus. Enemies never drop gold. Escape to bank found gold and browse the shop after the run.</dd></div>
+          <div><dt>Practice</dt><dd>Choose Practice on the start screen to learn the maze at your own pace. Practice runs earn no ranked score or banked gold.</dd></div>
+          <div><dt>Debug</dt><dd>Explore without a timer or damage. Choose a level theme, and use the pause menu to switch themes or toggle the full-map reveal. Debug runs are unranked.</dd></div>
+        </dl>
+        <p>The expedition stays paused while you read. Close the guide to return to the pause menu.</p>
+      </section>
+      <section id="help-enemies" class="menu-section" hidden>
+        <h3>Dungeon bestiary</h3>
+        <div class="bestiary" id="bestiary"></div>
+      </section>
+    </dialog>
+    <dialog id="history-menu" class="game-menu" aria-labelledby="history-heading">
+      <header class="menu-head">
+        <h2 id="history-heading">Run history</h2>
+        <form method="dialog"><button type="submit">Close</button></form>
+      </header>
+      <p class="history-empty" id="history-empty">No expeditions yet. Finish a run to start your record.</p>
+      <div class="history-tables" id="history-tables" hidden>
+        <section class="menu-section" aria-labelledby="best-heading">
+          <h3 id="best-heading">High scores</h3>
+          <ol id="high-scores" class="run-list"></ol>
+        </section>
+        <section class="menu-section" aria-labelledby="recent-heading">
+          <h3 id="recent-heading">Recent runs</h3>
+          <ol id="recent-runs" class="run-list"></ol>
+        </section>
+      </div>
+      <p class="history-note">Earn points for loot and kills. Escaping earns 500 extra points, plus 5 for each second left on the final floor and 250 per complete relic pair.</p>
+    </dialog>
+  </main>
+</body>
+</html>
