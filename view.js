@@ -821,6 +821,7 @@
   }
 
   function loadFloor(floor) {
+    releaseSwipe();
     clearTimeout(replyTimer);
     combatUntil = 0;
     g = floor;
@@ -1200,6 +1201,51 @@
     event.preventDefault();
     input(keys[k], event.repeat);
   });
+  const stick = get("swipe-stick");
+  let swipe;
+  function releaseSwipe() {
+    if (!swipe) return;
+    const { pointer, repeat } = swipe;
+    swipe = undefined;
+    clearInterval(repeat);
+    stick.hidden = true;
+    if (world.hasPointerCapture(pointer)) world.releasePointerCapture(pointer);
+  }
+  world.addEventListener("pointerdown", event => {
+    if (event.pointerType === "mouse" || !event.isPrimary || get("touch-controls").hidden || g.pausedAt !== null) return;
+    const bounds = world.getBoundingClientRect();
+    swipe = { pointer: event.pointerId, x: event.clientX, y: event.clientY, direction: null, armed: true };
+    stick.style.left = `${event.clientX - bounds.left}px`;
+    stick.style.top = `${event.clientY - bounds.top}px`;
+    stick.firstElementChild.style.transform = "translate(-50%, -50%)";
+    stick.hidden = false;
+    world.setPointerCapture(event.pointerId);
+    swipe.repeat = setInterval(() => {
+      if (get("touch-controls").hidden || g.pausedAt !== null) return releaseSwipe();
+      if (swipe.direction !== null) input(swipe.direction, true);
+    }, 115);
+  });
+  world.addEventListener("pointermove", event => {
+    if (swipe?.pointer !== event.pointerId) return;
+    const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
+    const length = Math.hypot(dx, dy);
+    const scale = length ? Math.min(length, 21) / length : 0;
+    stick.firstElementChild.style.transform = `translate(calc(-50% + ${dx * scale}px), calc(-50% + ${dy * scale}px))`;
+    if (length < 13) {
+      swipe.direction = null;
+      return;
+    }
+    const direction = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+    if (direction === swipe.direction) return;
+    swipe.direction = direction;
+    input(direction, !swipe.armed);
+    swipe.armed = false;
+  });
+  for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    world.addEventListener(name, event => { if (swipe?.pointer === event.pointerId) releaseSwipe(); });
+  }
+  world.addEventListener("contextmenu", event => { if (swipe) event.preventDefault(); });
+  window.addEventListener("blur", releaseSwipe);
   for (const button of document.querySelectorAll("[data-action]")) {
     const direction = Number(button.dataset.action);
     let holdDelay, holdRepeat, pointer;

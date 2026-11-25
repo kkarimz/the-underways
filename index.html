@@ -20,6 +20,7 @@
         </header>
         <div class="stage">
           <canvas id="world" width="272" height="208" tabindex="-1" aria-label="Dungeon view. Use WASD or arrow keys to move and bump into enemies to attack."></canvas>
+          <div class="swipe-stick" id="swipe-stick" aria-hidden="true" hidden><i></i></div>
           <div class="vignette" aria-hidden="true"></div>
           <div class="floating-text" id="floating-text" aria-hidden="true"></div>
           <div class="combat-beat" id="combat-beat" hidden>Enemy turn</div>
@@ -111,6 +112,7 @@
           </div>
         </div>
         <div class="touch" id="touch-controls" aria-label="Touch controls" hidden>
+          <div class="swipe-hint">Swipe to move · Hold to keep walking</div>
           <button type="button" data-action="3" aria-label="Move left">←</button>
           <button type="button" data-action="0" aria-label="Move up">↑</button>
           <button type="button" data-action="2" aria-label="Move down">↓</button>
@@ -227,7 +229,7 @@
       <section id="help-basics" class="menu-section">
         <h3>Survive the Underways</h3>
         <dl class="guide-rules">
-          <div><dt>Move &amp; fight</dt><dd>Use WASD or the arrow keys to move. Holding a direction stops at an enemy. Press again to attack, then watch for the enemy's reply.</dd></div>
+          <div><dt>Move &amp; fight</dt><dd>Use WASD or the arrow keys, or swipe on the dungeon. Hold the direction to keep walking. When you meet an enemy, press or swipe toward it again to attack.</dd></div>
           <div><dt>Healing</dt><dd>Tonics found in the maze are consumed on pickup, restoring up to 2 HP. A red bar appears above your explorer at 30% health or less.</dd></div>
           <div><dt>Descend &amp; escape</dt><dd>Find stairs down on floors 1–3 and the escape gate on floor 4. Each timed floor starts at 60 seconds. An hourglass adds 10 seconds. Blue runes point toward the stairs or gate.</dd></div>
           <div><dt>Bring back loot</dt><dd>Escape with both relics for a score bonus. Enemies never drop gold. Escape to bank found gold and browse the shop after the run.</dd></div>

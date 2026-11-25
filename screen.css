@@ -207,6 +207,9 @@ kbd { display: inline-block; padding: 1px 4px; border: 1px solid var(--line); ba
 .touch { display: none; justify-content: center; gap: 6px; padding: 6px 8px; background: #0f1612; border-block: 1px solid #34372b; }
 .touch button { min-width: 44px; min-height: 46px; touch-action: manipulation; }
 .touch [data-action] { flex: 1; max-width: 76px; font-size: 22px; touch-action: none; user-select: none; -webkit-touch-callout: none; }
+.swipe-hint { flex-basis: 100%; text-align: center; color: var(--muted); font-size: 12px; }
+.swipe-stick { position: absolute; width: 54px; height: 54px; transform: translate(-50%, -50%); border: 2px solid #f1d49d76; border-radius: 50%; background: #15181066; pointer-events: none; }
+.swipe-stick i { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; border: 1px solid #ffe6ad; background: #d6b776c4; border-radius: 50%; }
 
 .briefing, .result {
   position: absolute;
@@ -426,7 +429,8 @@ h2 { font-size: clamp(36px, 7vw, 70px); }
 @media (max-height: 660px) { .debrief { width: min(100%, 226px); } }
 @media (any-pointer: coarse) {
   .expedition:has(.touch:not([hidden])) { grid-template-rows: var(--bar) minmax(0, 1fr) auto; }
-  .touch { display: flex; }
+  .touch { display: flex; flex-wrap: wrap; }
+  .expedition:has(.touch:not([hidden])) #world { touch-action: none; user-select: none; -webkit-touch-callout: none; }
   .controls .key-hints, #pause-open, #zone, .location-split { display: none; }
   .control-actions { flex-wrap: wrap; }
 }
