@@ -7,7 +7,7 @@ A turn-based 2D maze crawler. Every expedition generates new rooms, corridors, l
 Open `index.html` in a current browser on macOS or Windows. Keep the project files together. No internet, local server, or installation is needed for browser play.
 
 - **WASD / arrows:** Move. A held key stops at enemies; press again to attack. Your hit and the enemy response play in order.
-- **Touch:** Swipe on the dungeon to step or drag and hold to walk. Lift and swipe again to attack. The on-screen arrows also work.
+- **Touch:** Tap a direction around your explorer to step. Swipe or drag and hold to walk. Lift and tap or swipe again to attack.
 - **F:** Toggle fullscreen.
 - **Esc:** Pause or resume; the pause menu also opens the Field Guide and Options.
 - Walk over loot to collect it. Relics are optional; stepping onto the gate ends the expedition.

@@ -629,6 +629,8 @@
     if (g.pausedAt === null) {
       const now = performance.now();
       if (syncClock(now) || !pauseGame(g, now)) return;
+      releaseSwipe();
+      clearTap();
       clearInterval(clockInterval);
       clearTimeout(replyTimer);
     }
@@ -740,9 +742,34 @@
       document.querySelector("dialog[open]")?.close();
       const escaped = g.status === "won";
       const expired = g.status === "expired";
-      get("result-kicker").textContent = expired ? "Time expired" : escaped ? "Expedition complete" : "Expedition lost";
-      get("result-title").textContent = expired ? "Out of time." : escaped ? "You found the gate." : "You died.";
-      get("result-flavor").hidden = g.status !== "lost";
+      const ending = escaped && g.floorCount > 1;
+      get("result").classList.toggle("victory", ending);
+      get("victory-scene").hidden = !ending;
+      get("victory-stats").hidden = !ending;
+      get("result-copy").hidden = ending;
+      get("result-kicker").textContent = expired ? "Time expired" : ending ? "Expedition complete · 4 floors cleared" : escaped ? "Expedition complete" : "Expedition lost";
+      get("result-title").textContent = expired ? "Out of time." : ending ? "Back to daylight." : escaped ? "You found the gate." : "You died.";
+      const flavor = get("result-flavor");
+      flavor.hidden = !ending && g.status !== "lost";
+      flavor.textContent = ending ? (p.relics === 2 * g.floorCount
+        ? "Not a relic left behind. The Underways have nothing left to hide."
+        : "The gate closes behind you. For the first time since the ruins, you feel the sun.") : "The maze keeps you.";
+      if (ending) {
+        const portrait = atlasIcon(AVATARS[settings.avatar].sprite, AVATARS[settings.avatar].filter);
+        const avatar = get("victory-avatar");
+        avatar.replaceChildren(portrait);
+        const stats = [
+          ["Gold found", finalScore.gold], ["Relics recovered", `${p.relics}/${2 * g.floorCount}`],
+          ["Enemies defeated", p.kills], unranked ? ["Turns taken", g.turn] : ["Final floor time left", `${g.secondsLeft}s`],
+        ];
+        get("victory-stats").replaceChildren(...stats.map(([label, value]) => {
+          const cell = document.createElement("div"), term = document.createElement("dt"), number = document.createElement("dd");
+          term.textContent = label;
+          number.textContent = value;
+          cell.append(term, number);
+          return cell;
+        }));
+      }
       get("result-score").textContent = unranked ? `${g.mode === "debug" ? "Debug" : "Practice"} run · Unranked` : `${finalScore.score.toLocaleString()} pts${newBest ? " · New high score!" : ""}`;
       get("relic-bonus").hidden = !finalScore.relicBonus;
       get("relic-bonus").textContent = `Relic pairs recovered · +${finalScore.relicBonus} pts`;
@@ -822,6 +849,7 @@
 
   function loadFloor(floor) {
     releaseSwipe();
+    clearTap();
     clearTimeout(replyTimer);
     combatUntil = 0;
     g = floor;
@@ -1202,7 +1230,22 @@
     input(keys[k], event.repeat);
   });
   const stick = get("swipe-stick");
-  let swipe;
+  let swipe, tapTimer;
+  const directionFrom = (dx, dy) => Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+  function clearTap() { clearTimeout(tapTimer); }
+  function touchStep(direction) {
+    clearTap();
+    const expires = performance.now() + 460;
+    const floor = g;
+    const attempt = () => {
+      const now = performance.now();
+      if (g !== floor || g.status !== "playing" || g.pausedAt !== null || now > expires) return;
+      const readyIn = Math.max(lastInput + 105, combatUntil) - now;
+      if (g.replyPending || readyIn > 0) tapTimer = setTimeout(attempt, g.replyPending ? 30 : Math.ceil(readyIn));
+      else input(direction);
+    };
+    attempt();
+  }
   function releaseSwipe() {
     if (!swipe) return;
     const { pointer, repeat } = swipe;
@@ -1212,70 +1255,59 @@
     if (world.hasPointerCapture(pointer)) world.releasePointerCapture(pointer);
   }
   world.addEventListener("pointerdown", event => {
-    if (event.pointerType === "mouse" || !event.isPrimary || get("touch-controls").hidden || g.pausedAt !== null) return;
+    if (swipe || event.pointerType === "mouse" || !event.isPrimary || get("touch-controls").hidden || g.pausedAt !== null) return;
     const bounds = world.getBoundingClientRect();
-    swipe = { pointer: event.pointerId, x: event.clientX, y: event.clientY, direction: null, armed: true };
+    swipe = { pointer: event.pointerId, x: event.clientX, y: event.clientY, direction: null, moved: false, farthest: 0 };
     stick.style.left = `${event.clientX - bounds.left}px`;
     stick.style.top = `${event.clientY - bounds.top}px`;
     stick.firstElementChild.style.transform = "translate(-50%, -50%)";
     stick.hidden = false;
     world.setPointerCapture(event.pointerId);
-    swipe.repeat = setInterval(() => {
-      if (get("touch-controls").hidden || g.pausedAt !== null) return releaseSwipe();
-      if (swipe.direction !== null) input(swipe.direction, true);
-    }, 115);
   });
   world.addEventListener("pointermove", event => {
     if (swipe?.pointer !== event.pointerId) return;
     const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
     const length = Math.hypot(dx, dy);
+    swipe.farthest = Math.max(swipe.farthest, length);
     const scale = length ? Math.min(length, 21) / length : 0;
     stick.firstElementChild.style.transform = `translate(calc(-50% + ${dx * scale}px), calc(-50% + ${dy * scale}px))`;
-    if (length < 13) {
+    if (length < 9) {
       swipe.direction = null;
       return;
     }
-    const direction = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+    const direction = directionFrom(dx, dy);
     if (direction === swipe.direction) return;
     swipe.direction = direction;
-    input(direction, !swipe.armed);
-    swipe.armed = false;
+    if (!swipe.moved) {
+      swipe.moved = true;
+      touchStep(direction);
+      swipe.repeat = setInterval(() => {
+        if (get("touch-controls").hidden || g.pausedAt !== null) return releaseSwipe();
+        if (swipe.direction !== null) input(swipe.direction, true);
+      }, 115);
+    } else {
+      input(direction, true);
+    }
   });
-  for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
+  world.addEventListener("pointerup", event => {
+    if (swipe?.pointer !== event.pointerId) return;
+    const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
+    const { moved, farthest } = swipe;
+    releaseSwipe();
+    if (moved) return;
+    if (Math.hypot(dx, dy) >= 9) touchStep(directionFrom(dx, dy));
+    else if (farthest < 9) {
+      const bounds = world.getBoundingClientRect();
+      const x = event.clientX - bounds.left - bounds.width / 2;
+      const y = event.clientY - bounds.top - bounds.height / 2;
+      if (Math.hypot(x, y) >= 12) touchStep(directionFrom(x, y));
+    }
+  });
+  for (const name of ["pointercancel", "lostpointercapture"]) {
     world.addEventListener(name, event => { if (swipe?.pointer === event.pointerId) releaseSwipe(); });
   }
   world.addEventListener("contextmenu", event => { if (swipe) event.preventDefault(); });
-  window.addEventListener("blur", releaseSwipe);
-  for (const button of document.querySelectorAll("[data-action]")) {
-    const direction = Number(button.dataset.action);
-    let holdDelay, holdRepeat, pointer;
-    const release = () => {
-      clearTimeout(holdDelay);
-      clearInterval(holdRepeat);
-      pointer = undefined;
-    };
-    button.addEventListener("pointerdown", event => {
-      if (event.pointerType === "mouse" || !event.isPrimary) return;
-      pointer = event.pointerId;
-      button.setPointerCapture(pointer);
-      input(direction);
-      holdDelay = setTimeout(() => {
-        const step = () => {
-          if (g.status !== "playing" || g.pausedAt !== null || enemyAhead(g, direction)) release();
-          else input(direction, true);
-        };
-        holdRepeat = setInterval(step, 115);
-        step();
-      }, 260);
-    });
-    for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
-      button.addEventListener(name, event => { if (pointer === event.pointerId) release(); });
-    }
-    button.addEventListener("contextmenu", event => event.preventDefault());
-    button.addEventListener("click", event => {
-      if (event.detail === 0 || event.pointerType === "mouse" && !event.sourceCapabilities?.firesTouchEvents) input(direction);
-    });
-  }
+  window.addEventListener("blur", () => { releaseSwipe(); clearTap(); });
   get("restart").addEventListener("click", () => prep(true));
   get("replay").addEventListener("click", () => prep(true));
   for (const button of document.querySelectorAll("[data-mode]")) {

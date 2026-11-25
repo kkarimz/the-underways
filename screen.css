@@ -206,8 +206,7 @@ kbd { display: inline-block; padding: 1px 4px; border: 1px solid var(--line); ba
 .key-hints span { margin-inline: 4px; color: var(--gold); }
 .touch { display: none; justify-content: center; gap: 6px; padding: 6px 8px; background: #0f1612; border-block: 1px solid #34372b; }
 .touch button { min-width: 44px; min-height: 46px; touch-action: manipulation; }
-.touch [data-action] { flex: 1; max-width: 76px; font-size: 22px; touch-action: none; user-select: none; -webkit-touch-callout: none; }
-.swipe-hint { flex-basis: 100%; text-align: center; color: var(--muted); font-size: 12px; }
+.swipe-hint { flex: 1; align-self: center; text-align: center; color: var(--muted); font-size: 12px; }
 .swipe-stick { position: absolute; width: 54px; height: 54px; transform: translate(-50%, -50%); border: 2px solid #f1d49d76; border-radius: 50%; background: #15181066; pointer-events: none; }
 .swipe-stick i { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; border: 1px solid #ffe6ad; background: #d6b776c4; border-radius: 50%; }
 
@@ -273,6 +272,15 @@ h2 { font-size: clamp(36px, 7vw, 70px); }
 .result-score { margin-top: 10px; color: var(--gold); font: 26px/1 var(--display-font); }
 .result .bank-reward { color: var(--teal); font: 24px/1 var(--display-font); }
 .result .relic-bonus { color: var(--gold); font: 23px/1 var(--display-font); }
+.result.victory { background: radial-gradient(ellipse at center top, #554044ef 0%, #121a16fa 76%); }
+.victory-scene { position: relative; width: min(100%, 384px); aspect-ratio: 192 / 56; margin: 0 auto 13px; background: url("assets/first-light.svg") center / cover; border: 1px solid #806948; box-shadow: 3px 3px #090d0c; }
+#victory-avatar { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); }
+.victory-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin: 13px 0; }
+.victory-stats div { min-width: 0; display: flex; flex-direction: column-reverse; justify-content: center; gap: 3px; padding: 6px 3px; border: 1px solid #4e4638; background: #1e211a; }
+.victory-stats dt { color: var(--muted); font-size: 12px; }
+.victory-stats dd { margin: 0; color: var(--gold); font: 27px/1 var(--display-font); }
+.victory #result-flavor { max-width: 40ch; }
+@media (max-width: 420px) { .victory-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .relic-goal {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
