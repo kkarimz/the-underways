@@ -686,6 +686,7 @@
     get("debrief-goal").textContent = hasStairs() ? "Stairs" : "Exit";
     get("debrief-goal").previousElementSibling.classList.toggle("stairs-pin", hasStairs());
     get("pause-open").hidden = phase !== "playing" || g.status !== "playing";
+    get("touch-controls").hidden = get("pause-open").hidden;
     paintClock();
     paintGuide();
     get("hp").textContent = hasRolls ? `${p.hp} / ${p.maxHP}` : "—";
@@ -1200,7 +1201,34 @@
     input(keys[k], event.repeat);
   });
   for (const button of document.querySelectorAll("[data-action]")) {
-    button.addEventListener("click", () => input(Number(button.dataset.action)));
+    const direction = Number(button.dataset.action);
+    let holdDelay, holdRepeat, pointer;
+    const release = () => {
+      clearTimeout(holdDelay);
+      clearInterval(holdRepeat);
+      pointer = undefined;
+    };
+    button.addEventListener("pointerdown", event => {
+      if (event.pointerType === "mouse" || !event.isPrimary) return;
+      pointer = event.pointerId;
+      button.setPointerCapture(pointer);
+      input(direction);
+      holdDelay = setTimeout(() => {
+        const step = () => {
+          if (g.status !== "playing" || g.pausedAt !== null || enemyAhead(g, direction)) release();
+          else input(direction, true);
+        };
+        holdRepeat = setInterval(step, 115);
+        step();
+      }, 260);
+    });
+    for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
+      button.addEventListener(name, event => { if (pointer === event.pointerId) release(); });
+    }
+    button.addEventListener("contextmenu", event => event.preventDefault());
+    button.addEventListener("click", event => {
+      if (event.detail === 0 || event.pointerType === "mouse" && !event.sourceCapabilities?.firesTouchEvents) input(direction);
+    });
   }
   get("restart").addEventListener("click", () => prep(true));
   get("replay").addEventListener("click", () => prep(true));
@@ -1234,6 +1262,7 @@
     beginFloor();
   });
   get("pause-open").addEventListener("click", () => openPause());
+  get("touch-pause").addEventListener("click", () => openPause());
   for (const id of ["debug-biome", "debug-live-biome"]) {
     const picker = get(id);
     for (const [value, { name }] of Object.entries(BIOMES)) picker.add(new Option(name, value));

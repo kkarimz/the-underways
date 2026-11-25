@@ -204,8 +204,9 @@ kbd { display: inline-block; padding: 1px 4px; border: 1px solid var(--line); ba
 .key-s { --key: 2; }
 .key-d { --key: 3; }
 .key-hints span { margin-inline: 4px; color: var(--gold); }
-.touch { display: none; justify-content: center; gap: 6px; padding: 0 6px 7px; }
-.touch button { min-width: 44px; min-height: 42px; touch-action: manipulation; }
+.touch { display: none; justify-content: center; gap: 6px; padding: 6px 8px; background: #0f1612; border-block: 1px solid #34372b; }
+.touch button { min-width: 44px; min-height: 46px; touch-action: manipulation; }
+.touch [data-action] { flex: 1; max-width: 76px; font-size: 22px; touch-action: none; user-select: none; -webkit-touch-callout: none; }
 
 .briefing, .result {
   position: absolute;
@@ -423,4 +424,9 @@ h2 { font-size: clamp(36px, 7vw, 70px); }
   .bestiary { grid-template-columns: 1fr; }
 }
 @media (max-height: 660px) { .debrief { width: min(100%, 226px); } }
-@media (pointer: coarse) { .layout:has(.sidebar:not([hidden])) ~ .touch { display: flex; } }
+@media (any-pointer: coarse) {
+  .expedition:has(.touch:not([hidden])) { grid-template-rows: var(--bar) minmax(0, 1fr) auto; }
+  .touch { display: flex; }
+  .controls .key-hints, #pause-open, #zone, .location-split { display: none; }
+  .control-actions { flex-wrap: wrap; }
+}
